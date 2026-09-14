@@ -1,0 +1,274 @@
+{% extends "layout.html" %}
+{% block title %}客户公海 - 陈平安的资料库{% endblock %}
+{% block page_title %}客户公海{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="stat-body">
+            <div class="label">公海客户数</div>
+            <div class="value">{{ stats.total_public }}</div>
+        </div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="stat-body">
+            <div class="label">核验通过</div>
+            <div class="value">{{ verify_stats.total_pass }}</div>
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="stat-body">
+            <div class="label">核验失败</div>
+            <div class="value">{{ verify_stats.total_failed }}</div>
+        </div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+        <div class="stat-body">
+            <div class="label">待核验</div>
+            <div class="value">{{ verify_stats.total_unverified }}</div>
+        </div>
+    </div>
+    <div class="stat-card pink">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/></svg></div>
+        <div class="stat-body">
+            <div class="label">任务数</div>
+            <div class="value">{{ batch_stats|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-tabs">
+            <a href="{{ url_for('customer_pool', status='public', keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder) }}"
+               class="tab {% if status == 'public' %}active{% endif %}">
+                公海客户 <span class="count">{{ stats.total_public }}</span>
+            </a>
+            <a href="{{ url_for('customer_pool', status='my', keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder) }}"
+               class="tab {% if status == 'my' %}active{% endif %}">
+                我的客户 <span class="count">{{ stats.total_my }}</span>
+            </a>
+            {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('customer_pool', status='all', keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder) }}"
+               class="tab {% if status == 'all' %}active{% endif %}">
+                全部客户 <span class="count">{{ stats.total_all }}</span>
+            </a>
+            {% endif %}
+        </div>
+        <div class="card-toolbar">
+            <a href="{{ url_for('export_customers', status=status, keyword=keyword, batch=batch, verify=verify, has_shareholder=has_shareholder) }}" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="inline-filter">
+        <form method="GET">
+            <input type="hidden" name="status" value="{{ status }}">
+            <input type="text" name="keyword" value="{{ keyword }}" placeholder="搜索公司/法人/电话">
+            <input type="text" name="industry" value="{{ industry }}" placeholder="行业关键词">
+            <select name="province">
+                <option value="">全部省份</option>
+                {% for p in provinces %}
+                <option value="{{ p['province'] }}" {% if province == p['province'] %}selected{% endif %}>{{ p['province'] }}</option>
+                {% endfor %}
+            </select>
+            <select name="batch">
+                <option value="">全部任务</option>
+                {% for b in batches %}
+                <option value="{{ b['batch_name'] }}" {% if batch == b['batch_name'] %}selected{% endif %}>{{ b['batch_name'] }}</option>
+                {% endfor %}
+            </select>
+            <select name="verify">
+                <option value="all" {% if verify == 'all' %}selected{% endif %}>全部核验状态</option>
+                <option value="pass" {% if verify == 'pass' %}selected{% endif %}>核验通过</option>
+                <option value="failed" {% if verify == 'failed' %}selected{% endif %}>核验失败</option>
+                <option value="unverified" {% if verify == 'unverified' %}selected{% endif %}>待核验</option>
+            </select>
+            <select name="has_shareholder">
+                <option value="" {% if has_shareholder == '' %}selected{% endif %}>全部（股东）</option>
+                <option value="yes" {% if has_shareholder == 'yes' %}selected{% endif %}>有大股东</option>
+                <option value="no" {% if has_shareholder == 'no' %}selected{% endif %}>无大股东</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm" style="width:auto;">搜索</button>
+            <a href="{{ url_for('customer_pool', status=status) }}" class="btn btn-secondary btn-sm">重置</a>
+        </form>
+    </div>
+
+    <div class="table-wrapper">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>公司名称</th>
+                <th>法人</th>
+                <th>电话</th>
+                <th>行业</th>
+                <th>省份</th>
+                <th>任务</th>
+                <th>核验状态</th>
+                <th>经营状态</th>
+                <th>所属人</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in customers %}
+            <tr>
+                <td>
+                    <a href="{{ url_for('customer_detail', cid=c['id']) }}" class="company-link">{{ c['company_name'] }}</a>
+                    {% if c['shareholder_info'] %}<span class="badge badge-warning" title="{{ c['shareholder_info'] }}" style="margin-left:4px;">股</span>{% endif %}
+                </td>
+                <td>{{ c['legal_person'] }}</td>
+                <td>{{ c['legal_phone'] }}</td>
+                <td>{{ c['industry'] }}</td>
+                <td>{{ c['province'] }}</td>
+                <td>
+                    {% if c['batch_name'] %}
+                    <span class="badge badge-pink">{{ c['batch_name'] }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c['verify_result'] == 'pass' %}
+                    <span class="badge badge-success">核验通过</span>
+                    {% elif c['verify_result'] == 'failed' %}
+                    <span class="badge badge-error" title="{{ c['fail_reason'] }}">核验失败</span>
+                    {% else %}
+                    <span class="badge badge-default">待核验</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c['business_status'] == '存续' or c['business_status'] == '开业' %}
+                    <span class="badge badge-success">{{ c['business_status'] }}</span>
+                    {% elif c['business_status'] == '注销' or c['business_status'] == '吊销' %}
+                    <span class="badge badge-error">{{ c['business_status'] }}</span>
+                    {% else %}
+                    <span class="badge badge-default">{{ c['business_status'] or '-' }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if c['status'] == 'public' %}
+                    <span class="badge badge-info">公海</span>
+                    {% else %}
+                    <span class="font-weight-bold">{{ c['owner_name'] or '-' }}</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-group">
+                    {% if c['status'] == 'public' %}
+                    <button onclick="claimCustomer({{ c['id'] }})" class="btn btn-success btn-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:3px;"><polyline points="20 6 9 17 4 12"/></svg>
+                        领取
+                    </button>
+                    {% elif c['owner_id'] == session.user_id or session.get('role') == 'admin' %}
+                    <button onclick="releaseCustomer({{ c['id'] }})" class="btn btn-warning btn-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:3px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        放回公海
+                    </button>
+                    {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not customers %}
+            <tr>
+                <td colspan="10">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <div class="empty-text">暂无客户</div>
+                        <div class="empty-desc">调整筛选条件查看更多数据</div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('customer_pool', status=status, keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder, page=page-1) }}">上一页</a>
+        {% else %}
+        <span class="disabled">上一页</span>
+        {% endif %}
+        
+        {% set start = [1, page - 2] | max %}
+        {% set end = [total_pages, page + 2] | min %}
+        
+        {% if start > 1 %}
+        <a href="{{ url_for('customer_pool', status=status, keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder, page=1) }}">1</a>
+        {% if start > 2 %}<span class="disabled">...</span>{% endif %}
+        {% endif %}
+        
+        {% for p in range(start, end + 1) %}
+        {% if p == page %}
+        <span class="current">{{ p }}</span>
+        {% else %}
+        <a href="{{ url_for('customer_pool', status=status, keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder, page=p) }}">{{ p }}</a>
+        {% endif %}
+        {% endfor %}
+        
+        {% if end < total_pages %}
+        {% if end < total_pages - 1 %}<span class="disabled">...</span>{% endif %}
+        <a href="{{ url_for('customer_pool', status=status, keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder, page=total_pages) }}">{{ total_pages }}</a>
+        {% endif %}
+        
+        {% if page < total_pages %}
+        <a href="{{ url_for('customer_pool', status=status, keyword=keyword, industry=industry, province=province, batch=batch, verify=verify, has_shareholder=has_shareholder, page=page+1) }}">下一页</a>
+        {% else %}
+        <span class="disabled">下一页</span>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% if batch_stats %}
+<div class="card">
+    <div class="card-header">按任务分布</div>
+    <div class="card-body">
+        <div class="tag-cloud">
+            {% for bs in batch_stats %}
+            <a href="{{ url_for('customer_pool', batch=bs['batch_name'], status=status, verify=verify, has_shareholder=has_shareholder) }}"
+               class="tag-item pink">
+                <div class="tag-name">{{ bs['batch_name'] }}</div>
+                <div class="tag-stats">
+                    <span>共 {{ bs['total'] }} 条</span>
+                    <span style="color:var(--cinnabar);">公海 {{ bs['public_count'] }}</span>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function claimCustomer(id) {
+    if (!confirm('确定领取该客户吗？')) return;
+    fetch(`/customer/${id}/claim`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { location.reload(); }
+            else { alert(data.msg); }
+        });
+}
+function releaseCustomer(id) {
+    if (!confirm('确定将该客户放回公海吗？')) return;
+    fetch(`/customer/${id}/release`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { location.reload(); }
+            else { alert(data.msg); }
+        });
+}
+</script>
+{% endblock %}
