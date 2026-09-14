@@ -1,0 +1,135 @@
+{% extends "layout.html" %}
+{% block title %}用户管理 - 陈平安的资料库{% endblock %}
+{% block page_title %}用户管理{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <span>添加用户</span>
+    </div>
+    <div style="padding: 20px;">
+        <form method="POST" action="{{ url_for('add_user') }}" style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #666;">用户名 <span style="color: #ff4d4f;">*</span></label>
+                <input type="text" name="username" required placeholder="用户名" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 150px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #666;">密码 <span style="color: #ff4d4f;">*</span></label>
+                <input type="text" name="password" required placeholder="默认123456" value="123456" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 150px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #666;">姓名</label>
+                <input type="text" name="real_name" placeholder="真实姓名" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 150px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #666;">手机号</label>
+                <input type="text" name="phone" placeholder="手机号" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 150px;">
+            </div>
+            <div>
+                <label style="display: block; margin-bottom: 4px; font-size: 13px; color: #666;">角色</label>
+                <select name="role" style="padding: 8px 12px; border: 1px solid #d9d9d9; border-radius: 4px; width: 120px;">
+                    <option value="user">普通用户</option>
+                    <option value="admin">管理员</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="height: 36px;">添加用户</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span>用户列表（{{ users|length }} 人）</span>
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary btn-sm">返回仪表盘</a>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>用户名</th>
+                <th>姓名</th>
+                <th>手机号</th>
+                <th>角色</th>
+                <th>创建时间</th>
+                <th>最后登录</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for u in users %}
+            <tr>
+                <td>{{ u['id'] }}</td>
+                <td>{{ u['username'] }}</td>
+                <td>{{ u['real_name'] or '-' }}</td>
+                <td>{{ u['phone'] or '-' }}</td>
+                <td>
+                    {% if u['role'] == 'admin' %}
+                    <span class="badge badge-info">管理员</span>
+                    {% else %}
+                    <span class="badge badge-default">普通用户</span>
+                    {% endif %}
+                </td>
+                <td>{{ u['created_at'] }}</td>
+                <td>{{ u['last_login'] or '-' }}</td>
+                <td>
+                    <button onclick="resetPwd({{ u['id'] }})" class="btn btn-warning btn-sm">重置密码</button>
+                    {% if u['id'] != session.user_id %}
+                    <button onclick="changeRole({{ u['id'] }}, '{{ 'user' if u['role'] == 'admin' else 'admin' }}')" class="btn btn-secondary btn-sm">
+                        设为{{ '普通用户' if u['role'] == 'admin' else '管理员' }}
+                    </button>
+                    <button onclick="deleteUser({{ u['id'] }})" class="btn btn-danger btn-sm">删除</button>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not users %}
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">暂无用户</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function resetPwd(uid) {
+    const pwd = prompt('请输入新密码（默认123456）：', '123456');
+    if (pwd === null) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/users/${uid}/reset`;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'password';
+    input.value = pwd;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function changeRole(uid, role) {
+    if (!confirm(`确定将该用户设为${role == 'admin' ? '管理员' : '普通用户'}吗？`)) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/users/${uid}/role`;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'role';
+    input.value = role;
+    form.appendChild(input);
+    document.body.appendChild(form);
+    form.submit();
+}
+
+function deleteUser(uid) {
+    if (!confirm('确定删除该用户吗？')) return;
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/admin/users/${uid}/delete`;
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+{% endblock %}
