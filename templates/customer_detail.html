@@ -1,0 +1,167 @@
+{% extends "layout.html" %}
+{% block title %}客户详情 - 企业客户公海管理系统{% endblock %}
+{% block page_title %}客户详情{% endblock %}
+
+{% block content %}
+<div class="card ink-corner">
+    <div class="card-header">
+        <span style="display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--cinnabar);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <strong style="font-family:'KaiTi','STKaiti','楷体',serif;font-size:16px;letter-spacing:2px;">{{ customer['company_name'] }}</strong>
+        </span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            {% if customer['status'] == 'public' %}
+            <span class="badge badge-info">公海客户</span>
+            <button onclick="claimCustomer({{ customer['id'] }})" class="btn btn-success btn-sm">领取客户</button>
+            {% else %}
+            <span class="badge badge-success">已领取</span>
+            <span style="font-size:12px;color:var(--text-muted);margin:0 4px;">所属人：<strong style="color:var(--ink-dark);">{{ customer['owner_name'] }}</strong></span>
+                {% if customer['owner_id'] == session.user_id or session.get('role') == 'admin' %}
+                <button onclick="releaseCustomer({{ customer['id'] }})" class="btn btn-warning btn-sm">放回公海</button>
+                {% endif %}
+            {% endif %}
+            <a href="{{ url_for('customer_pool') }}" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:3px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                返回列表
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="ink-title"><span>企业概况</span></div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="label">公司名称</div>
+                <div class="value" style="font-weight:400;font-size:15px;">{{ customer['company_name'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">法定代表人</div>
+                <div class="value">{{ customer['legal_person'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">法人电话</div>
+                <div class="value" style="color:var(--cinnabar);font-weight:400;">{{ customer['legal_phone'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">注册资本</div>
+                <div class="value">{{ customer['registered_capital'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">成立日期</div>
+                <div class="value">{{ customer['established_date'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">经营状态</div>
+                <div class="value">
+                    {% if customer['business_status'] == '存续' or customer['business_status'] == '开业' %}
+                    <span class="badge badge-success">{{ customer['business_status'] }}</span>
+                    {% elif customer['business_status'] == '注销' or customer['business_status'] == '吊销' %}
+                    <span class="badge badge-error">{{ customer['business_status'] }}</span>
+                    {% else %}
+                    {{ customer['business_status'] or '-' }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属行业</div>
+                <div class="value">{{ customer['industry'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">参保人数</div>
+                <div class="value" style="color:var(--cinnabar);font-size:16px;font-family:'KaiTi',serif;">{{ customer['insured_count'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">官网</div>
+                <div class="value">
+                    {% if customer['website'] %}
+                    <a href="{{ customer['website'] }}" target="_blank" style="color:var(--cinnabar);">{{ customer['website'] }}</a>
+                    {% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属省份</div>
+                <div class="value">{{ customer['province'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属城市</div>
+                <div class="value">{{ customer['city'] or '-' }}</div>
+            </div>
+        </div>
+
+        <hr class="ink-divider">
+
+        <div class="detail-grid">
+            <div class="detail-item detail-full">
+                <div class="label">注册地址</div>
+                <div class="value">{{ customer['address'] or '-' }}</div>
+            </div>
+            <div class="detail-item detail-full">
+                <div class="label">经营范围</div>
+                <div class="value" style="line-height:2;">{{ customer['business_scope'] or '-' }}</div>
+            </div>
+        </div>
+
+        <hr class="ink-divider">
+
+        <div class="ink-title"><span>其他信息</span></div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="label">统一社会信用代码</div>
+                <div class="value" style="font-family:monospace;font-size:12px;">{{ customer['credit_code'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">数据来源</div>
+                <div class="value"><span class="badge badge-info">{{ customer['source'] or '-' }}</span></div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属批次</div>
+                <div class="value">
+                    {% if customer['batch_name'] %}
+                    <span class="badge badge-pink">{{ customer['batch_name'] }}</span>
+                    {% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">股东信息</div>
+                <div class="value">{{ customer['shareholder_info'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">创建时间</div>
+                <div class="value">{{ customer['created_at'] or '-' }}</div>
+            </div>
+            {% if customer['status'] == 'claimed' %}
+            <div class="detail-item">
+                <div class="label">领取时间</div>
+                <div class="value">{{ customer['claimed_at'] or '-' }}</div>
+            </div>
+            {% endif %}
+            <div class="detail-item detail-full">
+                <div class="label">备注</div>
+                <div class="value">{{ customer['remark'] or '-' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function claimCustomer(id) {
+    if (!confirm('确定领取该客户吗？')) return;
+    fetch(`/customer/${id}/claim`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { location.reload(); }
+            else { alert(data.msg); }
+        });
+}
+function releaseCustomer(id) {
+    if (!confirm('确定将该客户放回公海吗？')) return;
+    fetch(`/customer/${id}/release`, { method: 'POST' })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) { location.reload(); }
+            else { alert(data.msg); }
+        });
+}
+</script>
+{% endblock %}
