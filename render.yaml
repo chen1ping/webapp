@@ -1,0 +1,24 @@
+# Render 部署配置
+# Render 会自动检测到这个文件并使用里面的配置
+
+services:
+  - type: web
+    name: webapp
+    runtime: python
+    buildCommand: |
+      pip install -r requirements.txt
+      python -c "from database import init_db_tables; init_db_tables()"
+    startCommand: gunicorn -w 2 -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DB_TYPE
+        value: postgres
+      - key: STORAGE_TYPE
+        value: supabase
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PORT
+        value: "10000"
+    autoDeploy: yes
+    healthCheckPath: /health
