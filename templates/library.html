@@ -1,0 +1,575 @@
+{% extends "layout.html" %}
+{% block title %}资料库 - 陈平安的资料库{% endblock %}
+{% block page_title %}资料库{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">资料总数</div>
+            <div class="value">{{ stats.total_all }}</div>
+        </div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="stat-body">
+            <div class="label">核验通过</div>
+            <div class="value">{{ stats.total_pass }}</div>
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+        <div class="stat-body">
+            <div class="label">核验失败</div>
+            <div class="value">{{ stats.total_failed }}</div>
+        </div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">覆盖平台</div>
+            <div class="value">{{ source_stats|length }}</div>
+        </div>
+    </div>
+    <div class="stat-card pink">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/></svg></div>
+        <div class="stat-body">
+            <div class="label">任务数</div>
+            <div class="value">{{ batch_stats|length }}</div>
+        </div>
+    </div>
+    <div class="stat-card cyan">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"/><path d="M12 2a10 10 0 0 0-10 10c0 5.5 10 12 10 12s10-6.5 10-12A10 10 0 0 0 12 2z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">覆盖省份</div>
+            <div class="value">{{ province_stats|length }}</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-tabs">
+            <a href="{{ url_for('library', verify='all', source=source, batch=batch) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}" 
+               class="tab {% if verify == 'all' %}active{% endif %}">
+                全部资料 <span class="count">{{ stats.total_all }}</span>
+            </a>
+            <a href="{{ url_for('library', verify='pass', source=source, batch=batch) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}" 
+               class="tab {% if verify == 'pass' %}active{% endif %}">
+                核验通过 <span class="count">{{ stats.total_pass }}</span>
+            </a>
+            <a href="{{ url_for('library', verify='failed', source=source, batch=batch) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}" 
+               class="tab {% if verify == 'failed' %}active{% endif %}">
+                核验失败 <span class="count">{{ stats.total_failed }}</span>
+            </a>
+        </div>
+        <div class="card-toolbar">
+            <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('importModal').classList.add('show')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                导入资料
+            </button>
+            <div style="width:1px;height:24px;background:var(--border);margin:0 4px;"></div>
+            <label class="checkbox-label" style="font-size:12px;">
+                <input type="checkbox" id="maxInsuredDup" style="width:14px;height:14px;accent-color:var(--cinnabar);">
+                <span>同名保留参保最大</span>
+            </label>
+            <div style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;">
+                <span>第</span>
+                <input type="number" id="exportStart" min="1" placeholder="1" class="input-sm" style="width:50px;font-size:12px;">
+                <span>条起</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px;font-size:12px;white-space:nowrap;">
+                <span>导</span>
+                <input type="number" id="exportCount" min="1" placeholder="全部" class="input-sm" style="width:50px;font-size:12px;">
+                <span>条</span>
+            </div>
+            <a href="#" onclick="return doExport()" class="btn btn-secondary btn-sm" style="font-size:12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;margin-right:3px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                导出Excel
+            </a>
+        </div>
+    </div>
+
+    <div class="inline-filter">
+        <form method="GET">
+            <input type="hidden" name="verify" value="{{ verify }}">
+            <input type="text" name="keyword" value="{{ keyword }}" placeholder="搜索公司/法人/电话" style="min-width:180px;flex:1;">
+            <input type="text" name="category" value="{{ category }}" placeholder="品类筛选" style="width:140px;">
+            <input type="number" name="min_insured" value="{{ min_insured }}" placeholder="最低参保" min="0" style="width:100px;">
+            <input type="number" name="max_insured" value="{{ max_insured }}" placeholder="最高参保" min="0" style="width:100px;">
+            
+            <div class="dropdown">
+                <button type="button" class="dropdown-btn" onclick="toggleDropdown('provinceDropdown')" id="provincePickerBtn">
+                    {% if selected_provinces %}已选 {{ selected_provinces|length }} 个省份{% else %}选择省份{% endif %}
+                </button>
+                <div class="dropdown-menu" id="provinceDropdown">
+                    <div class="dropdown-header">
+                        <label class="checkbox-label" style="font-weight:600;">
+                            <input type="checkbox" id="selectAllProvinces" onchange="toggleAllProvinces(this)">
+                            全选
+                        </label>
+                    </div>
+                    {% for p in provinces %}
+                    <label>
+                        <input type="checkbox" name="provinces" value="{{ p['province'] }}"
+                               class="province-checkbox"
+                               {% if p['province'] in selected_provinces %}checked{% endif %}
+                               onchange="updateProvinceBtn()">
+                        {{ p['province'] }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button type="button" class="dropdown-btn" onclick="toggleDropdown('cityDropdown')" id="cityPickerBtn">
+                    {% if selected_cities %}已选 {{ selected_cities|length }} 个城市{% else %}选择城市{% endif %}
+                </button>
+                <div class="dropdown-menu" id="cityDropdown">
+                    <div class="dropdown-header">
+                        <label class="checkbox-label" style="font-weight:600;">
+                            <input type="checkbox" id="selectAllCities" onchange="toggleAllCities(this)">
+                            全选
+                        </label>
+                    </div>
+                    {% for c in cities %}
+                    <label>
+                        <input type="checkbox" name="cities" value="{{ c['city'] }}"
+                               class="city-checkbox"
+                               {% if c['city'] in selected_cities %}checked{% endif %}
+                               onchange="updateCityBtn()">
+                        {{ c['city'] }}
+                    </label>
+                    {% endfor %}
+                    {% if not cities %}
+                    <div style="padding:12px;color:#999;font-size:13px;">暂无城市数据，请先选择省份</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="dropdown">
+                <button type="button" class="dropdown-btn" onclick="toggleDropdown('districtDropdown')" id="districtPickerBtn">
+                    {% if selected_districts %}已选 {{ selected_districts|length }} 个区县{% else %}选择区县{% endif %}
+                </button>
+                <div class="dropdown-menu" id="districtDropdown">
+                    <div class="dropdown-header">
+                        <label class="checkbox-label" style="font-weight:600;">
+                            <input type="checkbox" id="selectAllDistricts" onchange="toggleAllDistricts(this)">
+                            全选
+                        </label>
+                    </div>
+                    {% for d in districts %}
+                    <label>
+                        <input type="checkbox" name="districts" value="{{ d['district'] }}"
+                               class="district-checkbox"
+                               {% if d['district'] in selected_districts %}checked{% endif %}
+                               onchange="updateDistrictBtn()">
+                        {{ d['district'] }}
+                    </label>
+                    {% endfor %}
+                    {% if not districts %}
+                    <div style="padding:12px;color:#999;font-size:13px;">暂无区县数据，请先选择省份或城市</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <select name="source">
+                <option value="">全部平台</option>
+                {% for s in sources %}
+                <option value="{{ s['source'] }}" {% if source == s['source'] %}selected{% endif %}>{{ s['source'] }}</option>
+                {% endfor %}
+            </select>
+            <select name="batch">
+                <option value="">全部任务</option>
+                {% for b in batches %}
+                <option value="{{ b['batch_name'] }}" {% if batch == b['batch_name'] %}selected{% endif %}>{{ b['batch_name'] }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm" style="width:auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;margin-right:4px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                搜索
+            </button>
+            <a href="{{ url_for('library', verify=verify) }}" class="btn btn-secondary btn-sm">重置</a>
+        </form>
+    </div>
+
+    <div class="table-wrapper">
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="min-width:180px;">公司名称</th>
+                <th>法人</th>
+                <th>电话</th>
+                <th>省份</th>
+                <th>城市</th>
+                <th>区县</th>
+                <th>行业</th>
+                <th>来源</th>
+                <th>任务</th>
+                <th>核验</th>
+                <th style="width:60px;">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td><a href="{{ url_for('library_detail', cid=r['id']) }}" class="company-link">{{ r['company_name'] }}</a></td>
+                <td>{{ r['legal_person'] }}</td>
+                <td>{{ r['legal_phone'] }}</td>
+                <td>{{ r['province'] }}</td>
+                <td>{{ r['city'] }}</td>
+                <td>{{ r['district'] }}</td>
+                <td>{{ r['industry'] }}</td>
+                <td><span class="badge badge-info">{{ r['source'] }}</span></td>
+                <td>
+                    {% if r['batch_name'] %}
+                    <span class="badge badge-pink">{{ r['batch_name'] }}</span>
+                    {% else %}
+                    <span class="text-muted">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r['verify_result'] == 'pass' %}
+                    <span class="badge badge-success">核验通过</span>
+                    {% else %}
+                    <span class="badge badge-error" title="{{ r['fail_reason'] }}">核验失败</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <div class="action-group">
+                        <a href="{{ url_for('library_detail', cid=r['id']) }}" class="btn btn-secondary btn-sm">详情</a>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not records %}
+            <tr>
+                <td colspan="11">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                        <div class="empty-text">暂无数据</div>
+                        <div class="empty-desc">调整筛选条件或导入新数据</div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="{{ url_for('library', verify=verify, keyword=keyword, source=source, batch=batch, page=page-1) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}">上一页</a>
+        {% else %}
+        <span class="disabled">上一页</span>
+        {% endif %}
+        
+        {% set start = [1, page - 2] | max %}
+        {% set end = [total_pages, page + 2] | min %}
+        
+        {% if start > 1 %}
+        <a href="{{ url_for('library', verify=verify, keyword=keyword, source=source, batch=batch, page=1) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}">1</a>
+        {% if start > 2 %}<span class="disabled">...</span>{% endif %}
+        {% endif %}
+        
+        {% for p in range(start, end + 1) %}
+        {% if p == page %}
+        <span class="current">{{ p }}</span>
+        {% else %}
+        <a href="{{ url_for('library', verify=verify, keyword=keyword, source=source, batch=batch, page=p) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}">{{ p }}</a>
+        {% endif %}
+        {% endfor %}
+        
+        {% if end < total_pages %}
+        {% if end < total_pages - 1 %}<span class="disabled">...</span>{% endif %}
+        <a href="{{ url_for('library', verify=verify, keyword=keyword, source=source, batch=batch, page=total_pages) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}">{{ total_pages }}</a>
+        {% endif %}
+        
+        {% if page < total_pages %}
+        <a href="{{ url_for('library', verify=verify, keyword=keyword, source=source, batch=batch, page=page+1) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}">下一页</a>
+        {% else %}
+        <span class="disabled">下一页</span>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+{% if source_stats %}
+<div class="card">
+    <div class="card-header">按B2B平台分布</div>
+    <div class="card-body">
+        <div class="tag-cloud">
+            {% for ss in source_stats %}
+            <a href="{{ url_for('library', source=ss['source'], verify=verify, batch=batch) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}"
+               class="tag-item orange">
+                <div class="tag-name">{{ ss['source'] }}</div>
+                <div class="tag-stats">
+                    <span>共 {{ ss['total'] }} 条</span>
+                    <span class="tag-pass">通过 {{ ss['pass_count'] }}</span>
+                    {% if ss['failed_count'] %}
+                    <span class="tag-fail">失败 {{ ss['failed_count'] }}</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if batch_stats %}
+<div class="card">
+    <div class="card-header">按任务分布</div>
+    <div class="card-body">
+        <div class="tag-cloud">
+            {% for bs in batch_stats %}
+            <a href="{{ url_for('library', batch=bs['batch_name'], verify=verify) }}{{ province_query }}{{ city_query }}{{ district_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}"
+               class="tag-item pink">
+                <div class="tag-name">{{ bs['batch_name'] }}</div>
+                <div class="tag-stats">
+                    <span>共 {{ bs['total'] }} 条</span>
+                    <span class="tag-pass">通过 {{ bs['pass_count'] }}</span>
+                    {% if bs['failed_count'] %}
+                    <span class="tag-fail">失败 {{ bs['failed_count'] }}</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if province_stats %}
+<div class="card">
+    <div class="card-header">按省份分布</div>
+    <div class="card-body">
+        <div class="tag-cloud">
+            {% for ps in province_stats %}
+            <a href="{{ url_for('library', province=ps['province'], verify=verify, source=source, batch=batch) }}{{ city_query }}{{ category_query }}{{ min_insured_query }}{{ max_insured_query }}"
+               class="tag-item blue">
+                <div class="tag-name">{{ ps['province'] }}</div>
+                <div class="tag-stats">
+                    <span>共 {{ ps['total'] }} 条</span>
+                    <span class="tag-pass">通过 {{ ps['pass_count'] }}</span>
+                    {% if ps['failed_count'] %}
+                    <span class="tag-fail">失败 {{ ps['failed_count'] }}</span>
+                    {% endif %}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="modal-overlay" id="importModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span>导入资料到资料库</span>
+            <button type="button" class="modal-close" onclick="document.getElementById('importModal').classList.remove('show')">&times;</button>
+        </div>
+        <form id="importForm" method="POST" action="{{ url_for('library_import') }}" enctype="multipart/form-data">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>选择Excel文件（支持多选，.xlsx / .xls）</label>
+                    <input type="file" name="files" accept=".xlsx,.xls" multiple required onchange="updateFileList(this)">
+                    <div class="file-list" id="fileList"></div>
+                </div>
+                <div class="form-group">
+                    <label>来源平台</label>
+                    <input type="text" name="source" placeholder="如：爱企查、1688汽车配件 等">
+                </div>
+                <div class="form-group">
+                    <label>备注内容</label>
+                    <input type="text" name="remark" placeholder="留空则不填">
+                </div>
+                <div class="form-group">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+                        <input type="checkbox" name="filter_industrial" checked style="width:14px;height:14px;accent-color:var(--cinnabar);">
+                        <span style="font-weight:600;color:var(--cinnabar);">工业品筛选（过滤畜牧/养殖/水产/食品/软件/种植/服务/医药/农药）</span>
+                    </label>
+                </div>
+                <div class="form-hint warning">
+                    <strong>支持列名：</strong>公司名称、法人姓名、法人电话、注册资本、成立日期、所属行业、注册地址、经营范围、统一社会信用代码、所属省份、所属城市、所属区县、参保人数、股份信息
+                </div>
+
+                <!-- 导入进度条 -->
+                <div id="importProgress" style="display:none;margin-top:16px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                        <span style="font-size:13px;color:var(--text-secondary);" id="progressMsg">准备中...</span>
+                        <span style="font-size:13px;font-weight:600;color:var(--cinnabar);" id="progressPct">0%</span>
+                    </div>
+                    <div style="width:100%;height:8px;background:#eef0f3;border-radius:4px;overflow:hidden;">
+                        <div id="progressBar" style="width:0%;height:100%;background:linear-gradient(90deg,var(--cinnabar),#ff6b35);border-radius:4px;transition:width 0.3s ease;"></div>
+                    </div>
+                    <div style="margin-top:8px;font-size:12px;color:var(--text-tertiary);text-align:center;">
+                        后台导入中，您可以继续浏览其他页面
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeImportModal()">取消</button>
+                <button type="submit" class="btn btn-primary" id="importSubmitBtn">开始导入</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function toggleDropdown(id) {
+    const menu = document.getElementById(id);
+    const isOpen = menu.classList.contains('show');
+    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+    if (!isOpen) menu.classList.add('show');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('show'));
+    }
+});
+function updateProvinceBtn() {
+    const checked = document.querySelectorAll('.province-checkbox:checked');
+    const btn = document.getElementById('provincePickerBtn');
+    btn.textContent = checked.length > 0 ? '已选 ' + checked.length + ' 个省份' : '选择省份';
+}
+function toggleAllProvinces(cb) {
+    document.querySelectorAll('.province-checkbox').forEach(b => b.checked = cb.checked);
+    updateProvinceBtn();
+}
+function updateCityBtn() {
+    const checked = document.querySelectorAll('.city-checkbox:checked');
+    const btn = document.getElementById('cityPickerBtn');
+    btn.textContent = checked.length > 0 ? '已选 ' + checked.length + ' 个城市' : '选择城市';
+}
+function toggleAllCities(cb) {
+    document.querySelectorAll('.city-checkbox').forEach(b => b.checked = cb.checked);
+    updateCityBtn();
+}
+function updateDistrictBtn() {
+    const checked = document.querySelectorAll('.district-checkbox:checked');
+    const btn = document.getElementById('districtPickerBtn');
+    btn.textContent = checked.length > 0 ? '已选 ' + checked.length + ' 个区县' : '选择区县';
+}
+function toggleAllDistricts(cb) {
+    document.querySelectorAll('.district-checkbox').forEach(b => b.checked = cb.checked);
+    updateDistrictBtn();
+}
+function doExport() {
+    var url = "{{ export_url|safe }}";
+    if (document.getElementById('maxInsuredDup').checked) {
+        url += (url.includes('?') ? '&' : '?') + 'max_insured_dup=1';
+    }
+    var exportStart = document.getElementById('exportStart').value;
+    if (exportStart && parseInt(exportStart) > 1) {
+        url += (url.includes('?') ? '&' : '?') + 'export_start=' + parseInt(exportStart);
+    }
+    var exportCount = document.getElementById('exportCount').value;
+    if (exportCount && parseInt(exportCount) > 0) {
+        url += (url.includes('?') ? '&' : '?') + 'export_count=' + parseInt(exportCount);
+    }
+    window.location.href = url;
+    return false;
+}
+function updateFileList(input) {
+    var list = document.getElementById('fileList');
+    if (input.files.length === 0) { list.innerHTML = ''; return; }
+    var html = '<strong>已选择 ' + input.files.length + ' 个文件：</strong><ul>';
+    for (var i = 0; i < input.files.length; i++) {
+        var size = (input.files[i].size / 1024).toFixed(1);
+        html += '<li>' + input.files[i].name + ' (' + size + 'KB)</li>';
+    }
+    html += '</ul>';
+    list.innerHTML = html;
+}
+
+// 后台导入进度相关
+var _pollTimer = null;
+
+function closeImportModal() {
+    document.getElementById('importModal').classList.remove('show');
+    if (_pollTimer) {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+    }
+}
+
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var formData = new FormData(this);
+    var submitBtn = document.getElementById('importSubmitBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = '上传中...';
+    document.getElementById('importProgress').style.display = 'block';
+    document.getElementById('progressMsg').textContent = '正在上传文件...';
+    document.getElementById('progressPct').textContent = '5%';
+    document.getElementById('progressBar').style.width = '5%';
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData,
+        redirect: 'manual'
+    }).then(function(response) {
+        // 从重定向URL中提取task_id
+        var location = response.headers.get('Location') || response.url;
+        var match = location.match(/task_id=([a-f0-9]+)/i);
+        if (match) {
+            startPolling(match[1]);
+        } else {
+            // 没有task_id，直接刷新页面
+            window.location.reload();
+        }
+    }).catch(function(err) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '开始导入';
+        document.getElementById('progressMsg').textContent = '上传失败: ' + err.message;
+    });
+});
+
+function startPolling(taskId) {
+    var submitBtn = document.getElementById('importSubmitBtn');
+    submitBtn.style.display = 'none';
+
+    _pollTimer = setInterval(function() {
+        fetch('/api/task/' + taskId)
+            .then(function(r) { return r.json(); })
+            .then(function(task) {
+                document.getElementById('progressMsg').textContent = task.message || '处理中...';
+                document.getElementById('progressPct').textContent = task.progress + '%';
+                document.getElementById('progressBar').style.width = task.progress + '%';
+
+                if (task.status === 'done') {
+                    clearInterval(_pollTimer);
+                    _pollTimer = null;
+                    document.getElementById('progressMsg').textContent = task.message + '，页面即将刷新...';
+                    setTimeout(function() { window.location.reload(); }, 1500);
+                } else if (task.status === 'failed') {
+                    clearInterval(_pollTimer);
+                    _pollTimer = null;
+                    submitBtn.disabled = false;
+                    submitBtn.style.display = '';
+                    submitBtn.textContent = '重新导入';
+                    document.getElementById('progressMsg').textContent = '失败: ' + (task.error || task.message);
+                }
+            })
+            .catch(function() {
+                // 网络错误忽略，继续轮询
+            });
+    }, 1500);
+}
+
+// 页面加载时检查是否有未完成的任务（从URL参数）
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    var taskId = params.get('task_id');
+    if (taskId) {
+        document.getElementById('importModal').classList.add('show');
+        document.getElementById('importProgress').style.display = 'block';
+        document.getElementById('importSubmitBtn').style.display = 'none';
+        startPolling(taskId);
+    }
+})();
+</script>
+{% endblock %}
