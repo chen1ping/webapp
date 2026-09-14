@@ -1,0 +1,209 @@
+{% extends "layout.html" %}
+{% block title %}去重模块 - 陈平安的资料库{% endblock %}
+{% block page_title %}数据去重{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
+    <div class="stat-card blue" style="flex:1 1 180px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">资料总数</div>
+            <div class="value">{{ total }}</div>
+        </div>
+    </div>
+    <div class="stat-card orange" style="flex:1 1 180px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M9 9h6v6H9z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">统一代码重复</div>
+            <div class="value" style="font-size:20px;">{{ dup_by_credit|length }}组 / {{ credit_dup_records }}条</div>
+        </div>
+    </div>
+    <div class="stat-card pink" style="flex:1 1 180px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <div class="stat-body">
+            <div class="label">公司+电话重复</div>
+            <div class="value" style="font-size:20px;">{{ dup_by_name_phone|length }}组 / {{ name_phone_dup_records }}条</div>
+        </div>
+    </div>
+    <div class="stat-card purple" style="flex:1 1 180px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">同名不同号</div>
+            <div class="value" style="font-size:20px;">{{ dup_by_company|length }}组 / {{ company_dup_records }}条</div>
+        </div>
+    </div>
+    <div class="stat-card cyan" style="flex:1 1 180px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">号码重复</div>
+            <div class="value" style="font-size:20px;">{{ dup_by_phone|length }}组 / {{ phone_dup_records }}条</div>
+        </div>
+    </div>
+</div>
+
+<div class="card ink-corner">
+    <div class="card-header">
+        <span style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--cinnabar);"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            执行去重
+        </span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('dedup_execute') }}">
+            <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+                {# 左侧：去重范围 #}
+                <div style="flex:1 1 300px;min-width:280px;">
+                    <label style="letter-spacing:3px;display:block;margin-bottom:10px;">去重范围（可多选）</label>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scope" value="credit" checked>
+                            <span>按<strong>统一社会信用代码</strong>去重（主键）</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scope" value="name_phone" checked>
+                            <span>按<strong>公司名称+法人电话</strong>去重（附加键）</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scope" value="company">
+                            <span>按<strong>公司名称</strong>去重（跨表重复检查）</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="scope" value="phone">
+                            <span>按<strong>法人电话</strong>去重（同一号码不同公司）</span>
+                        </label>
+                    </div>
+                </div>
+
+                {# 中间：保留策略 #}
+                <div style="flex:1 1 250px;min-width:230px;">
+                    <label style="letter-spacing:3px;display:block;margin-bottom:10px;">保留策略</label>
+                    <div style="display:flex;flex-direction:column;gap:10px;">
+                        <label class="checkbox-label">
+                            <input type="radio" name="strategy" value="keep_newest" checked style="accent-color:var(--cinnabar);">
+                            <span>保留<strong>最新</strong>记录（id最大）</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="radio" name="strategy" value="keep_oldest" style="accent-color:var(--cinnabar);">
+                            <span>保留<strong>最早</strong>记录（id最小）</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="radio" name="strategy" value="keep_complete" style="accent-color:var(--cinnabar);">
+                            <span>保留<strong>字段最完整</strong>的记录</span>
+                        </label>
+                    </div>
+                </div>
+
+                {# 右侧：警示和按钮 #}
+                <div style="flex:1 1 250px;min-width:230px;display:flex;flex-direction:column;gap:14px;">
+                    <div class="ink-quote" style="border-left-color:var(--cinnabar);color:var(--cinnabar);background:#faf4f4;margin:0;">
+                        <strong style="letter-spacing:2px;">警示：</strong>去重操作将永久删除重复记录，删除后不可恢复。请确认后再执行。
+                    </div>
+                    <button type="submit" class="btn btn-danger" style="font-size:15px;padding:11px 36px;letter-spacing:4px;width:auto;"
+                            onclick="return confirm('确定要执行去重操作吗？此操作不可撤销！')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:8px;"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                        开始去重
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if dup_by_credit %}
+<div class="card">
+    <div class="card-header">按统一社会信用代码重复明细（{{ dup_by_credit|length }} 组）</div>
+    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+    <table class="table">
+        <thead><tr><th style="width:40px;">#</th><th>统一社会信用代码</th><th>公司名称</th><th>重复次数</th><th>涉及手机号</th></tr></thead>
+        <tbody>
+            {% for item in dup_by_credit %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><code>{{ item['credit_code'] }}</code></td>
+                <td>{{ item['company_name'] or '-' }}</td>
+                <td><span class="badge badge-warning">{{ item['cnt'] }} 条</span></td>
+                <td style="font-size:12px;color:var(--text-muted);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ item['phones'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+{% if dup_by_name_phone %}
+<div class="card">
+    <div class="card-header">按公司名称+法人电话重复明细（{{ dup_by_name_phone|length }} 组）</div>
+    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+    <table class="table">
+        <thead><tr><th style="width:40px;">#</th><th>公司名称</th><th>法人电话</th><th>重复次数</th></tr></thead>
+        <tbody>
+            {% for item in dup_by_name_phone %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item['company_name'] }}</td>
+                <td><code style="color:var(--cinnabar);">{{ item['legal_phone'] }}</code></td>
+                <td><span class="badge badge-warning">{{ item['cnt'] }} 条</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+{% if dup_by_company %}
+<div class="card">
+    <div class="card-header">同名不同号重复明细（{{ dup_by_company|length }} 组）</div>
+    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+    <table class="table">
+        <thead><tr><th style="width:40px;">#</th><th>公司名称</th><th>记录数</th><th>不同电话数</th></tr></thead>
+        <tbody>
+            {% for item in dup_by_company %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ item['company_name'] }}</td>
+                <td><span class="badge badge-warning">{{ item['cnt'] }} 条</span></td>
+                <td><span class="badge badge-info">{{ item['phone_count'] }} 个号码</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+{% if dup_by_phone %}
+<div class="card">
+    <div class="card-header">按法人电话重复明细（{{ dup_by_phone|length }} 组）</div>
+    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;">
+    <table class="table">
+        <thead><tr><th style="width:40px;">#</th><th>法人电话</th><th>重复次数</th><th>涉及公司数</th><th>涉及公司名称</th></tr></thead>
+        <tbody>
+            {% for item in dup_by_phone %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><code style="color:var(--cinnabar);">{{ item['legal_phone'] }}</code></td>
+                <td><span class="badge badge-warning">{{ item['cnt'] }} 条</span></td>
+                <td><span class="badge badge-info">{{ item['company_count'] }} 家</span></td>
+                <td style="font-size:12px;color:var(--text-muted);max-width:400px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ item['companies'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endif %}
+
+{% if not dup_by_credit and not dup_by_name_phone and not dup_by_company and not dup_by_phone %}
+<div class="card">
+    <div class="card-body">
+        <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <div class="empty-text" style="font-size:18px;letter-spacing:6px;">未发现重复记录</div>
+            <div class="empty-desc">当前资料库中按所有标准检查均未发现重复数据</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
