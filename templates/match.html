@@ -1,0 +1,337 @@
+{% extends "layout.html" %}
+{% block title %}公司名匹配 - 陈平安的资料库{% endblock %}
+{% block page_title %}公司名匹配{% endblock %}
+
+{% block content %}
+<div class="stats-grid" style="display:flex;flex-wrap:wrap;gap:12px;">
+    <div class="stat-card green" style="flex:1 1 200px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
+        <div class="stat-body">
+            <div class="label">核验成功</div>
+            <div class="value">{{ stats.total_pass }}</div>
+        </div>
+    </div>
+    <div class="stat-card blue" style="flex:1 1 200px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">资料库总数</div>
+            <div class="value">{{ stats.total_all }}</div>
+        </div>
+    </div>
+    <div class="stat-card orange" style="flex:1 1 200px;">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+        <div class="stat-body">
+            <div class="label">匹配范围</div>
+            <div class="value" style="font-size:18px;">仅核验成功</div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--cinnabar);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            输入公司名称进行匹配
+        </span>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('library_match') }}" enctype="multipart/form-data" id="matchForm">
+            <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;">
+                {# 左侧：文本输入 #}
+                <div style="flex:2 1 350px;min-width:300px;">
+                    <label>方式一：直接输入公司名称（每行一个）</label>
+                    <textarea name="company_names" id="companyNames" rows="10" style="width:100%;font-size:13px;line-height:1.8;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;transition:all 0.25s ease;" placeholder="每行输入一个公司名称，例如：&#10;深圳市某某科技有限公司&#10;广州某某贸易有限公司&#10;浙江某某工业有限公司&#10;..." onfocus="this.style.borderColor='var(--cinnabar)';this.style.boxShadow='0 0 0 3px rgba(139,0,0,0.08)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'"></textarea>
+                    <div style="display:flex;gap:8px;margin-top:6px;align-items:center;">
+                        <span style="font-size:12px;color:var(--text-muted);">已输入：</span>
+                        <span id="nameCount" style="font-size:13px;font-weight:600;color:var(--cinnabar);">0</span>
+                        <span style="font-size:12px;color:var(--text-muted);">个公司名</span>
+                        <button type="button" class="btn btn-secondary btn-sm" style="margin-left:auto;padding:3px 10px;font-size:11px;" onclick="document.getElementById('companyNames').value='';updateCount()">清空</button>
+                        <button type="button" class="btn btn-secondary btn-sm" style="padding:3px 10px;font-size:11px;" onclick="pasteFromClipboard()">粘贴</button>
+                    </div>
+                </div>
+
+                {# 右侧：文件上传 + 匹配规则 + 按钮 #}
+                <div style="flex:1 1 280px;min-width:260px;display:flex;flex-direction:column;gap:14px;">
+                    <div>
+                        <label>方式二：上传公司名清单文件</label>
+                        <input type="file" name="name_file" accept=".txt,.xlsx,.xls" style="border-radius:var(--radius);width:100%;">
+                    </div>
+
+                    <div class="form-hint warning" style="margin:0;">
+                        <strong>匹配规则：</strong>
+                        <ol style="margin:6px 0 0 18px;padding:0;line-height:1.8;font-size:12px;">
+                            <li>仅匹配<strong style="color:var(--cinnabar);">核验成功</strong>的企业（共 {{ stats.total_pass }} 条）</li>
+                            <li>支持模糊匹配：公司名包含输入关键词即匹配</li>
+                            <li>可输入多个公司名或上传文件</li>
+                            <li>结果先展示在页面，确认后手动下载Excel</li>
+                        </ol>
+                    </div>
+
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <button type="submit" class="btn btn-success" id="matchBtn" style="padding:12px 36px;font-size:15px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;margin-right:8px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            开始匹配
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        {# 匹配状态提示 #}
+        <div id="matchStatus" style="margin-top:16px;display:none;padding:14px 18px;border-radius:var(--radius);border:1px solid var(--border);background:#fafbfc;">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <div id="matchSpinner" style="width:18px;height:18px;border:3px solid #ddd;border-top-color:var(--cinnabar);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+                <span id="matchStatusText" style="font-size:14px;color:var(--text-muted);">正在匹配中...</span>
+            </div>
+        </div>
+
+        {# 匹配结果区域 #}
+        <div id="matchResult" style="margin-top:16px;display:none;">
+            {# 统计卡片 #}
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+                <div style="flex:1 1 120px;padding:12px 18px;border-radius:var(--radius);background:linear-gradient(135deg,#e8f5e9,#f1f8e9);border:1px solid #c8e6c9;text-align:center;">
+                    <div style="font-size:12px;color:#555;margin-bottom:4px;">输入公司名</div>
+                    <div id="resTotal" style="font-size:24px;font-weight:700;color:#2e7d32;">0</div>
+                </div>
+                <div style="flex:1 1 120px;padding:12px 18px;border-radius:var(--radius);background:linear-gradient(135deg,#e3f2fd,#e8f5fe);border:1px solid #bbdefb;text-align:center;">
+                    <div style="font-size:12px;color:#555;margin-bottom:4px;">匹配成功</div>
+                    <div id="resMatched" style="font-size:24px;font-weight:700;color:#1565c2;">0</div>
+                </div>
+                <div style="flex:1 1 120px;padding:12px 18px;border-radius:var(--radius);background:linear-gradient(135deg,#fff3e0,#fff8e1);border:1px solid #ffe0b2;text-align:center;">
+                    <div style="font-size:12px;color:#555;margin-bottom:4px;">未匹配</div>
+                    <div id="resUnmatched" style="font-size:24px;font-weight:700;color:#e65100;">0</div>
+                </div>
+            </div>
+
+            {# 下载按钮 #}
+            <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
+                <a id="downloadBtn" href="#" class="btn btn-success" style="padding:10px 28px;font-size:14px;text-decoration:none;display:inline-flex;align-items:center;gap:6px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    下载Excel
+                </a>
+                <button type="button" class="btn btn-secondary" style="padding:10px 20px;font-size:14px;" onclick="document.getElementById('matchResult').style.display='none';">关闭结果</button>
+            </div>
+
+            {# 未匹配列表 #}
+            <div id="unmatchedSection" style="margin-bottom:16px;display:none;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:var(--cinnabar);">未匹配的公司名称：</div>
+                <div id="unmatchedList" style="max-height:200px;overflow-y:auto;padding:10px 14px;background:#fff8f0;border:1px solid #ffe0b2;border-radius:var(--radius);font-size:13px;line-height:1.8;">
+                </div>
+            </div>
+
+            {# 匹配结果预览表格 #}
+            <div id="previewSection" style="display:none;">
+                <div style="font-size:14px;font-weight:600;margin-bottom:8px;color:#1565c2;">匹配结果预览（前100条）：</div>
+                <div style="overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);">
+                    <table style="width:100%;border-collapse:collapse;font-size:12px;">
+                        <thead>
+                            <tr style="background:var(--cinnabar);color:#fff;">
+                                <th style="padding:8px 10px;text-align:left;">公司名称</th>
+                                <th style="padding:8px 10px;text-align:left;">法人</th>
+                                <th style="padding:8px 10px;text-align:left;">电话</th>
+                                <th style="padding:8px 10px;text-align:left;">行业</th>
+                                <th style="padding:8px 10px;text-align:left;">省份</th>
+                                <th style="padding:8px 10px;text-align:left;">参保人数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="previewTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">使用说明</div>
+    <div class="card-body">
+        <div class="detail-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr));">
+            <div class="detail-item">
+                <div class="label">适用场景</div>
+                <div class="value" style="font-size:13px;">有一批公司名称，需要从资料库中匹配出对应的完整企业信息</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">匹配范围</div>
+                <div class="value" style="font-size:13px;">仅匹配核验成功（verify_result='pass'）的企业记录</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">导出内容</div>
+                <div class="value" style="font-size:13px;">公司名称、法人、电话、注册资本、成立日期、行业、地址、经营范围、统一社会信用代码、省市区、参保人数、官网等</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">输出格式</div>
+                <div class="value" style="font-size:13px;">Excel文件，含两个Sheet：匹配结果 + 未匹配公司名</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function updateCount() {
+    const text = document.getElementById('companyNames').value.trim();
+    const count = text ? text.split('\n').filter(n => n.trim()).length : 0;
+    document.getElementById('nameCount').textContent = count;
+}
+document.getElementById('companyNames').addEventListener('input', updateCount);
+
+function pasteFromClipboard() {
+    navigator.clipboard.readText().then(text => {
+        const ta = document.getElementById('companyNames');
+        if (ta.value.trim()) {
+            ta.value = ta.value.trimEnd() + '\n' + text;
+        } else {
+            ta.value = text;
+        }
+        updateCount();
+    }).catch(() => {
+        alert('请手动粘贴（Ctrl+V）');
+    });
+}
+
+var matchForm = document.getElementById('matchForm');
+var matchBtn = document.getElementById('matchBtn');
+var matchStatus = document.getElementById('matchStatus');
+var matchSpinner = document.getElementById('matchSpinner');
+var matchStatusText = document.getElementById('matchStatusText');
+
+matchForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var names = document.getElementById('companyNames').value.trim();
+    var fileInput = matchForm.querySelector('input[type=file]');
+
+    if (!names && (!fileInput || !fileInput.files.length)) {
+        alert('请输入公司名称或上传文件');
+        return;
+    }
+
+    // 显示匹配中
+    matchStatus.style.display = 'block';
+    matchSpinner.style.display = 'inline-block';
+    matchSpinner.style.borderTopColor = 'var(--cinnabar)';
+    matchStatusText.textContent = '正在匹配中...请稍候';
+    matchStatusText.style.color = 'var(--text-muted)';
+    matchStatus.style.borderColor = 'var(--border)';
+    matchStatus.style.background = '#fafbfc';
+    matchBtn.disabled = true;
+    matchBtn.style.opacity = '0.6';
+    matchBtn.textContent = '匹配中...';
+
+    // 隐藏旧结果
+    document.getElementById('matchResult').style.display = 'none';
+
+    var startTime = Date.now();
+    var timer = setInterval(function() {
+        var elapsed = Math.round((Date.now() - startTime) / 1000);
+        matchStatusText.textContent = '正在匹配中...已用时 ' + elapsed + ' 秒';
+    }, 1000);
+
+    // AJAX提交
+    var formData = new FormData(matchForm);
+    fetch(matchForm.action, {
+        method: 'POST',
+        body: formData
+    }).then(function(response) {
+        clearInterval(timer);
+        var elapsed = Math.round((Date.now() - startTime) / 1000);
+
+        var ct = response.headers.get('content-type') || '';
+        if (ct.indexOf('application/json') >= 0) {
+            return response.json().then(function(data) {
+                if (data.success) {
+                    showMatchResult(data, elapsed);
+                } else {
+                    showError(data.message || '匹配失败');
+                }
+            });
+        } else {
+            // 服务器返回了HTML（错误页面）
+            return response.text().then(function(html) {
+                var match = html.match(/<div class="alert[^"]*">([\s\S]*?)<\/div>/);
+                showError(match ? match[1].trim() : '匹配失败，请重试');
+            });
+        }
+    }).catch(function(err) {
+        clearInterval(timer);
+        showError('网络错误: ' + err.message);
+    });
+
+    function showMatchResult(data, elapsed) {
+        matchSpinner.style.display = 'none';
+        matchStatusText.innerHTML = '<span style="color:#28a745;font-weight:600;">匹配完成！</span> 用时 ' + elapsed + ' 秒';
+        matchStatus.style.borderColor = '#28a745';
+        matchStatus.style.background = '#f0fff4';
+
+        // 显示统计
+        document.getElementById('resTotal').textContent = data.total_input;
+        document.getElementById('resMatched').textContent = data.matched_count;
+        document.getElementById('resUnmatched').textContent = data.unmatched_count;
+
+        // 下载链接
+        document.getElementById('downloadBtn').href = data.download_url;
+
+        // 未匹配列表
+        var unmatchedSection = document.getElementById('unmatchedSection');
+        var unmatchedList = document.getElementById('unmatchedList');
+        if (data.unmatched_count > 0 && data.unmatched_names && data.unmatched_names.length > 0) {
+            unmatchedSection.style.display = 'block';
+            var html = '';
+            data.unmatched_names.forEach(function(name, i) {
+                html += '<div style="padding:2px 0;border-bottom:1px dashed #eee;">' + (i+1) + '. ' + name + '</div>';
+            });
+            if (data.unmatched_count > 200) {
+                html += '<div style="padding:4px 0;color:#999;font-size:12px;">... 还有 ' + (data.unmatched_count - 200) + ' 个未显示，请下载Excel查看完整列表</div>';
+            }
+            unmatchedList.innerHTML = html;
+        } else {
+            unmatchedSection.style.display = 'none';
+        }
+
+        // 预览表格
+        var previewSection = document.getElementById('previewSection');
+        var previewTable = document.getElementById('previewTable');
+        if (data.preview_records && data.preview_records.length > 0) {
+            previewSection.style.display = 'block';
+            var phtml = '';
+            data.preview_records.forEach(function(r, i) {
+                var bg = i % 2 == 1 ? '#f7f9fc' : '';
+                phtml += '<tr style="background:' + bg + ';">';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.company_name) + '</td>';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.legal_person) + '</td>';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.legal_phone) + '</td>';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.industry) + '</td>';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.province) + '</td>';
+                phtml += '<td style="padding:6px 10px;">' + esc(r.insured_count) + '</td>';
+                phtml += '</tr>';
+            });
+            previewTable.innerHTML = phtml;
+        } else {
+            previewSection.style.display = 'none';
+        }
+
+        document.getElementById('matchResult').style.display = 'block';
+
+        matchBtn.disabled = false;
+        matchBtn.style.opacity = '1';
+        matchBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;margin-right:8px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>开始匹配';
+    }
+
+    function showError(msg) {
+        matchSpinner.style.display = 'none';
+        matchStatusText.textContent = '匹配失败: ' + msg;
+        matchStatusText.style.color = '#dc3545';
+        matchStatus.style.borderColor = '#dc3545';
+        matchStatus.style.background = '#fff5f5';
+        matchBtn.disabled = false;
+        matchBtn.style.opacity = '1';
+        matchBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;margin-right:8px;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>开始匹配';
+    }
+
+    function esc(s) {
+        if (!s) return '';
+        return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+});
+</script>
+{% endblock %}
