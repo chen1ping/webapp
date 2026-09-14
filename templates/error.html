@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block title %}错误 - 陈平安的资料库{% endblock %}
+{% block page_title %}出错了{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="error-page">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="width:80px;height:80px;opacity:0.2;margin-bottom:16px;color:var(--cinnabar);"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <div class="error-title">系统异常</div>
+            <div class="error-msg">{{ message }}</div>
+            <a href="{{ url_for('library') }}" class="btn btn-primary" style="width:auto;padding:10px 28px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:6px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                返回首页
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
