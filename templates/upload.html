@@ -1,0 +1,133 @@
+{% extends "layout.html" %}
+{% block title %}数据处理 - 企业客户公海管理系统{% endblock %}
+{% block page_title %}数据处理{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">上传数据生成核验文件</div>
+    <div class="card-body">
+        <div class="form-hint">
+            上传企业数据Excel（爱企查/天眼查导出），系统自动提取手机号生成支付宝核验文件。核验完成后请前往"电话系统"板块填写模板。系统支持自动识别表头行位置，兼容多种导出格式。
+        </div>
+
+        <div class="section-title">上传数据</div>
+        <form method="POST" action="{{ url_for('upload_step1') }}" enctype="multipart/form-data">
+            <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;">
+                <div class="form-group" style="flex:1 1 200px;margin-bottom:0;">
+                    <label>数据文件</label>
+                    <input type="file" name="file" accept=".xlsx,.xls" required>
+                </div>
+                <div class="form-group" style="flex:1 1 200px;margin-bottom:0;">
+                    <label>股东信息 <span class="info-tip">可选</span></label>
+                    <input type="file" name="shareholder_file" accept=".xlsx,.xls">
+                </div>
+                <div class="form-group" style="flex:0 1 150px;margin-bottom:0;">
+                    <label>批次名称</label>
+                    <input type="text" name="batch_name" placeholder="如：爱企查001">
+                </div>
+                <div class="form-group" style="flex:0 1 120px;margin-bottom:0;">
+                    <label>数据来源</label>
+                    <select name="source">
+                        <option value="爱企查">爱企查</option>
+                        <option value="天眼查">天眼查</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex:0 1 100px;margin-bottom:0;">
+                    <label>表头行号</label>
+                    <input type="number" name="header_row" value="3" min="1">
+                </div>
+                <div class="form-group" style="flex:0 1 100px;margin-bottom:0;">
+                    <label>最大行数</label>
+                    <input type="number" name="max_rows" value="3000" min="100">
+                </div>
+                <div class="form-group" style="flex:0 0 auto;margin-bottom:0;">
+                    <label>&nbsp;</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap;">
+                        <input type="checkbox" name="filter_industrial" checked style="width:14px;height:14px;accent-color:var(--cinnabar);">
+                        <span style="font-weight:600;color:var(--cinnabar);">工业品筛选</span>
+                    </label>
+                </div>
+                <div class="form-group" style="flex:0 0 auto;margin-bottom:0;">
+                    <button type="submit" class="btn btn-primary" style="width:auto;padding:10px 28px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;margin-right:6px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        生成核验文件
+                    </button>
+                </div>
+            </div>
+            <div class="form-hint" style="margin-top:8px;">
+                支持xlsx/xls格式，系统自动检测表头位置。股东信息可选，上传后可用"大股东筛选"。每文件最多3000条。工业品筛选：过滤畜牧/养殖/水产/食品/软件/种植/服务业及情趣用品。
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span>最近批次</span>
+        {% if batches %}
+        <span class="info-tip">共 {{ batches|length }} 个批次</span>
+        {% endif %}
+    </div>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>批次名称</th>
+                    <th>来源</th>
+                    <th>公司数</th>
+                    <th>手机号数</th>
+                    <th>核验数</th>
+                    <th>无异常</th>
+                    <th>状态</th>
+                    <th>创建人</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in batches %}
+                <tr>
+                    <td><strong>{{ b['name'] }}</strong></td>
+                    <td>{{ b['source'] }}</td>
+                    <td>{{ b['total_companies'] }}</td>
+                    <td>{{ b['total_phones'] }}</td>
+                    <td>{{ b['verified'] or '-' }}</td>
+                    <td>{{ b['no_exception'] or '-' }}</td>
+                    <td>
+                        {% if b['status'] == 'step1_done' %}
+                        <span class="badge badge-info">Step1完成</span>
+                        {% elif b['status'] == 'completed' %}
+                        <span class="badge badge-success">已完成</span>
+                        {% else %}
+                        <span class="badge badge-default">{{ b['status'] }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ b['creator_name'] or '-' }}</td>
+                    <td class="text-muted">{{ b['created_at'] }}</td>
+                    <td>
+                        <div class="action-group">
+                            <a href="{{ url_for('batch_detail', bid=b['id']) }}" class="btn btn-secondary btn-sm">详情</a>
+                            <form method="POST" action="{{ url_for('batch_delete', bid=b['id']) }}" onsubmit="return confirm('确定删除批次「{{ b['name'] }}」吗？已导入资料库的数据不会被删除。')">
+                                <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not batches %}
+                <tr>
+                    <td colspan="10">
+                        <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                        <div class="empty-text">暂无批次</div>
+                        <div class="empty-desc">上传Excel文件开始处理数据</div>
+                    </div>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
