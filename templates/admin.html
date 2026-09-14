@@ -1,0 +1,178 @@
+{% extends "layout.html" %}
+{% block title %}管理后台 - 企业客户公海管理系统{% endblock %}
+{% block page_title %}管理后台{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <div class="stat-body">
+            <div class="label">用户总数</div>
+            <div class="value">{{ stats.total_users }}</div>
+        </div>
+    </div>
+    <div class="stat-card green">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/></svg></div>
+        <div class="stat-body">
+            <div class="label">客户总数</div>
+            <div class="value">{{ stats.total_customers }}</div>
+        </div>
+    </div>
+    <div class="stat-card orange">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+        <div class="stat-body">
+            <div class="label">公海客户</div>
+            <div class="value">{{ stats.public_customers }}</div>
+        </div>
+    </div>
+    <div class="stat-card purple">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <div class="stat-body">
+            <div class="label">已领取</div>
+            <div class="value">{{ stats.claimed_customers }}</div>
+        </div>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="card">
+        <div class="card-header">
+            <span style="display:flex;align-items:center;gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--cinnabar);"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                用户统计
+            </span>
+            <a href="{{ url_for('admin_users') }}" class="btn btn-secondary btn-sm">用户管理</a>
+        </div>
+        <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>用户名</th>
+                    <th>姓名</th>
+                    <th>角色</th>
+                    <th>领取数</th>
+                    <th>最后登录</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in user_stats %}
+                <tr>
+                    <td>{{ u['username'] }}</td>
+                    <td>{{ u['real_name'] or '-' }}</td>
+                    <td>
+                        {% if u['role'] == 'admin' %}
+                        <span class="badge badge-info">管理员</span>
+                        {% else %}
+                        <span class="badge badge-default">普通用户</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ u['claimed_count'] }}</td>
+                    <td>{{ u['last_login'] or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span style="display:flex;align-items:center;gap:8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--cyan);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                最近操作日志
+            </span>
+        </div>
+        <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>用户</th>
+                    <th>操作</th>
+                    <th>详情</th>
+                    <th>时间</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td>{{ log['username'] or '-' }}</td>
+                    <td>{{ log['action'] }}</td>
+                    <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ log['detail'] }}">{{ log['detail'] or '-' }}</td>
+                    <td>{{ log['created_at'] }}</td>
+                </tr>
+                {% endfor %}
+                {% if not recent_logs %}
+                <tr>
+                    <td colspan="4">
+                        <div class="empty-state" style="padding:30px;">
+                            <div class="empty-text" style="font-size:13px;">暂无日志</div>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <span style="display:flex;align-items:center;gap:8px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:var(--orange);"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            最近批次
+        </span>
+    </div>
+    <div class="table-wrapper">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>批次名称</th>
+                <th>来源</th>
+                <th>公司数</th>
+                <th>手机号数</th>
+                <th>无异常</th>
+                <th>状态</th>
+                <th>创建人</th>
+                <th>创建时间</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for b in batches %}
+            <tr>
+                <td>{{ b['name'] }}</td>
+                <td>{{ b['source'] }}</td>
+                <td>{{ b['total_companies'] }}</td>
+                <td>{{ b['total_phones'] }}</td>
+                <td>{{ b['no_exception'] or '-' }}</td>
+                <td>
+                    {% if b['status'] == 'step1_done' %}
+                    <span class="badge badge-info">Step1完成</span>
+                    {% elif b['status'] == 'completed' %}
+                    <span class="badge badge-success">已完成</span>
+                    {% else %}
+                    <span class="badge badge-default">{{ b['status'] }}</span>
+                    {% endif %}
+                </td>
+                <td>{{ b['creator_name'] or '-' }}</td>
+                <td>{{ b['created_at'] }}</td>
+                <td>
+                    <a href="{{ url_for('batch_detail', bid=b['id']) }}" class="btn btn-secondary btn-sm">详情</a>
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not batches %}
+            <tr>
+                <td colspan="9">
+                    <div class="empty-state" style="padding:30px;">
+                        <div class="empty-text" style="font-size:13px;">暂无批次</div>
+                    </div>
+                </td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
