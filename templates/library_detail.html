@@ -1,0 +1,128 @@
+{% extends "layout.html" %}
+{% block title %}资料详情 - 陈平安的资料库{% endblock %}
+{% block page_title %}资料详情{% endblock %}
+
+{% block content %}
+<div class="card ink-corner">
+    <div class="card-header">
+        <span style="display:flex;align-items:center;gap:10px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;color:var(--cinnabar);"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <strong style="font-family:'KaiTi','STKaiti','楷体',serif;font-size:16px;letter-spacing:2px;">{{ record['company_name'] }}</strong>
+        </span>
+        <div style="display:flex;align-items:center;gap:8px;">
+            {% if record['verify_result'] == 'pass' %}
+            <span class="badge badge-success">核验通过</span>
+            {% else %}
+            <span class="badge badge-error">核验失败</span>
+            {% endif %}
+            <a href="{{ url_for('library') }}" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;margin-right:3px;"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                返回列表
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if record['verify_result'] == 'failed' and record['fail_reason'] %}
+        <div class="ink-quote" style="border-left-color:var(--cinnabar);color:var(--cinnabar);background:var(--error-light);margin-bottom:20px;">
+            <strong style="letter-spacing:2px;">失败原因：</strong>
+            <span>{{ record['fail_reason'] }}</span>
+        </div>
+        {% endif %}
+
+        <div class="ink-title"><span>企业概况</span></div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="label">公司名称</div>
+                <div class="value" style="font-weight:400;font-size:15px;">{{ record['company_name'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">法定代表人</div>
+                <div class="value">{{ record['legal_person'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">法人电话</div>
+                <div class="value" style="color:var(--cinnabar);font-weight:400;">{{ record['legal_phone'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">注册资本</div>
+                <div class="value">{{ record['registered_capital'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">成立日期</div>
+                <div class="value">{{ record['established_date'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">经营状态</div>
+                <div class="value">
+                    {% if record['business_status'] == '存续' or record['business_status'] == '开业' %}
+                    <span class="badge badge-success">{{ record['business_status'] }}</span>
+                    {% elif record['business_status'] == '注销' or record['business_status'] == '吊销' %}
+                    <span class="badge badge-error">{{ record['business_status'] }}</span>
+                    {% else %}
+                    {{ record['business_status'] or '-' }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属行业</div>
+                <div class="value">{{ record['industry'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">参保人数</div>
+                <div class="value" style="color:var(--cinnabar);font-size:16px;font-family:'KaiTi',serif;">{{ record['insured_count'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属省份</div>
+                <div class="value">{{ record['province'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属城市</div>
+                <div class="value">{{ record['city'] or '-' }}</div>
+            </div>
+        </div>
+
+        <hr class="ink-divider">
+
+        <div class="detail-grid">
+            <div class="detail-item detail-full">
+                <div class="label">注册地址</div>
+                <div class="value">{{ record['address'] or '-' }}</div>
+            </div>
+            <div class="detail-item detail-full">
+                <div class="label">经营范围</div>
+                <div class="value" style="line-height:2;">{{ record['business_scope'] or '-' }}</div>
+            </div>
+        </div>
+
+        <hr class="ink-divider">
+
+        <div class="ink-title"><span>其他信息</span></div>
+        <div class="detail-grid">
+            <div class="detail-item">
+                <div class="label">统一社会信用代码</div>
+                <div class="value" style="font-family:monospace;font-size:12px;">{{ record['credit_code'] or '-' }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="label">数据来源（平台）</div>
+                <div class="value"><span class="badge badge-info">{{ record['source'] or '-' }}</span></div>
+            </div>
+            <div class="detail-item">
+                <div class="label">所属批次</div>
+                <div class="value">
+                    {% if record['batch_name'] %}
+                    <span class="badge badge-pink">{{ record['batch_name'] }}</span>
+                    {% else %}-{% endif %}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="label">入库时间</div>
+                <div class="value">{{ record['created_at'] or '-' }}</div>
+            </div>
+            <div class="detail-item detail-full">
+                <div class="label">备注</div>
+                <div class="value">{{ record['remark'] or '-' }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
