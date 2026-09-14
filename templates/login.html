@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - 陈平安资料库</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}?v=28">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#f7f4ee">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="陈平安资料库">
+    <style>
+        /* 登录页水墨装饰 */
+        .login-ink-left {
+            position: absolute;
+            left: 5%;
+            top: 10%;
+            width: 280px;
+            height: 500px;
+            background: radial-gradient(ellipse at 30% 40%, rgba(0,0,0,0.04) 0%, transparent 60%);
+            pointer-events: none;
+            animation: inkFloat 8s ease-in-out infinite;
+        }
+        .login-ink-right {
+            position: absolute;
+            right: 8%;
+            bottom: 15%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(139,0,0,0.03) 0%, transparent 60%);
+            pointer-events: none;
+            animation: inkFloat 10s ease-in-out infinite reverse;
+        }
+        @keyframes inkFloat {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(10px, -15px); }
+        }
+        .login-seal {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            width: 52px;
+            height: 52px;
+            border: 2px solid var(--cinnabar);
+            color: var(--cinnabar);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-family: "KaiTi", "STKaiti", "楷体", serif;
+            transform: rotate(-8deg);
+            opacity: 0.7;
+            letter-spacing: 0;
+            line-height: 1.1;
+            text-align: center;
+            border-radius: var(--radius-sm);
+            transition: all 0.4s ease;
+        }
+        .login-seal::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border: 1px solid var(--cinnabar);
+            opacity: 0.4;
+            border-radius: 1px;
+        }
+        .login-box:hover .login-seal {
+            transform: rotate(0deg) scale(1.08);
+            opacity: 0.9;
+        }
+        .login-divider {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+            gap: 12px;
+        }
+        .login-divider::before,
+        .login-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+        }
+        .login-divider span {
+            font-size: 12px;
+            color: var(--text-muted);
+            letter-spacing: 4px;
+        }
+        .login-box {
+            border-radius: var(--radius);
+            border-top: 3px solid var(--cinnabar);
+            box-shadow: var(--shadow-lg);
+            animation: loginFadeIn 0.6s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, var(--cinnabar), var(--vermilion), var(--cinnabar));
+        }
+        @keyframes loginFadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-box h1 {
+            position: relative;
+            padding-bottom: 10px;
+            font-size: 30px;
+            letter-spacing: 6px;
+            transition: letter-spacing 0.3s ease;
+        }
+        .login-box h1:hover {
+            letter-spacing: 8px;
+        }
+        .login-box h1::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 2px;
+            background: var(--cinnabar);
+            opacity: 0.6;
+            transition: width 0.3s ease;
+        }
+        .login-box:hover h1::after {
+            width: 80px;
+        }
+        .login-box .form-group input {
+            border: none;
+            border-bottom: 1px solid var(--border);
+            background: transparent;
+            border-radius: 0;
+            padding: 12px 4px;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+        }
+        .login-box .form-group input:focus {
+            border-bottom-color: var(--cinnabar);
+            background: transparent;
+            box-shadow: none;
+        }
+        .login-box .form-group input::placeholder {
+            color: var(--ink-wash);
+            letter-spacing: 1px;
+        }
+        .login-box .form-group label {
+            letter-spacing: 4px;
+            font-size: 13px;
+            transition: color 0.3s ease;
+        }
+        .login-box .form-group:focus-within label {
+            color: var(--cinnabar);
+        }
+        .login-box .btn-primary {
+            margin-top: 8px;
+            border-radius: var(--radius);
+            box-shadow: 0 2px 8px rgba(139,0,0,0.15);
+            transition: all 0.3s ease;
+        }
+        .login-box .btn-primary:hover {
+            box-shadow: 0 4px 16px rgba(139,0,0,0.25);
+            transform: translateY(-1px);
+            letter-spacing: 8px;
+        }
+        .login-poem {
+            text-align: center;
+            font-size: 11px;
+            color: var(--ink-faint);
+            margin-top: 20px;
+            letter-spacing: 3px;
+            font-style: normal;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .login-box:hover .login-poem {
+            opacity: 1;
+        }
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: var(--text-muted);
+            font-size: 11px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="login-container">
+        <div class="login-ink-left"></div>
+        <div class="login-ink-right"></div>
+        <div class="login-box ink-corner" style="position:relative;">
+            <div class="login-seal">平安<br>之印</div>
+            <h1>陈平安资料库</h1>
+            <p class="subtitle">高效管理企业客户资源</p>
+            
+            <div class="login-divider"><span>登 录</span></div>
+            
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" name="username" required placeholder="请输入用户名" autofocus>
+                </div>
+                <div class="form-group">
+                    <label>密 码</label>
+                    <input type="password" name="password" required placeholder="请输入密码">
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top:12px;">进 入</button>
+            </form>
+            
+            <div class="login-footer">
+                陈平安资料库 · 仅供授权用户使用
+            </div>
+            <div class="login-poem">—— 纸上得来终觉浅 ——</div>
+        </div>
+    </div>
+
+    <script>
+        setTimeout(() => {
+            const msgs = document.querySelectorAll('.flash-message');
+            msgs.forEach(m => m.style.opacity = '0');
+            setTimeout(() => msgs.forEach(m => m.remove()), 300);
+        }, 3000);
+    </script>
+</body>
+</html>
